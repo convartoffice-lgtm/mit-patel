@@ -46,8 +46,9 @@ const SCENES: Scene[] = [
   { from: 426, dur: 182, src: "d_swap.mp4" },
   { from: 608, dur: 136, src: "e_hand.mp4" },
 ];
-const END_FROM = 744;
-const TOTAL = 900;
+const TOUR_FROM = 744;
+const END_FROM = 1340;
+const TOTAL = 1500;
 
 // ---------------------------------------------------------------------------
 // Footage with slow push-in
@@ -312,7 +313,7 @@ const Badge: React.FC = () => {
 // Thin CMYK progress bar along the bottom
 const Progress: React.FC = () => {
   const frame = useCurrentFrame();
-  const p = frame / END_FROM;
+  const p = frame / TOUR_FROM;
   return (
     <div style={{ position: "absolute", bottom: 0, left: 0, height: 12, width: `${p * 100}%`, display: "flex" }}>
       {CMYK.map((c) => (
@@ -453,6 +454,287 @@ const EndCard: React.FC = () => {
   );
 };
 
+
+// ---------------------------------------------------------------------------
+// Website tour — convart.in inside a phone mockup with callouts
+// ---------------------------------------------------------------------------
+const SCREEN_W = 600;
+const SCREEN_H = 1300;
+const PX = SCREEN_W / 1075; // screenshot px -> screen px
+const STATUS = 60; // phone status bar height
+
+type TourScreen = {
+  from: number; // relative to tour start
+  dur: number;
+  img: string;
+  h: number; // screenshot height in px
+  header: boolean;
+  pan: [number, number];
+  tap?: { x: number; y: number; at: number };
+  highlight?: { x: number; y: number; w: number; h: number; at: number };
+  callouts: { text: string; side: "l" | "r"; y: number; at: number; color: string }[];
+};
+
+const TOUR_LEN = 596;
+const TOUR: TourScreen[] = [
+  {
+    from: 0, dur: 106, img: "web/hero.png", h: 2330, header: false, pan: [0, 0],
+    tap: { x: 300, y: 666, at: 70 },
+    callouts: [{ text: "Art Beyond the Frame", side: "r", y: 1120, at: 30, color: M }],
+  },
+  {
+    from: 106, dur: 125, img: "web/browse.png", h: 5750, header: true, pan: [0, -1650],
+    callouts: [
+      { text: "16+ curated artworks", side: "l", y: 520, at: 18, color: C },
+      { text: "Spiritual · Abstract · Portrait", side: "r", y: 820, at: 42, color: Y },
+      { text: "From ₹7,999", side: "l", y: 1120, at: 66, color: M },
+    ],
+  },
+  {
+    from: 231, dur: 115, img: "web/custom.png", h: 3750, header: true, pan: [0, -900],
+    callouts: [
+      { text: "01  Share your wall", side: "r", y: 520, at: 14, color: C },
+      { text: "02  Tell us your mood", side: "l", y: 800, at: 40, color: M },
+      { text: "03  We design it", side: "r", y: 1080, at: 66, color: Y },
+    ],
+  },
+  {
+    from: 346, dur: 95, img: "web/visualizer.png", h: 2495, header: true, pan: [0, -40],
+    tap: { x: 300, y: 1000, at: 40 },
+    callouts: [
+      { text: "Upload your design", side: "l", y: 640, at: 14, color: C },
+      { text: "Instant pricing", side: "r", y: 1000, at: 50, color: Y },
+    ],
+  },
+  {
+    from: 441, dur: 155, img: "web/services.png", h: 4500, header: true, pan: [0, -1290],
+    highlight: { x: 50, y: 718, w: 495, h: 66, at: 112 },
+    callouts: [
+      { text: "6×6\" premium blocks", side: "l", y: 520, at: 30, color: C },
+      { text: "UV-printed HD art", side: "r", y: 930, at: 52, color: M },
+      { text: "Ready in 1 week", side: "l", y: 1150, at: 74, color: Y },
+    ],
+  },
+];
+
+const PhoneScreen: React.FC<{ s: TourScreen; first: boolean }> = ({ s, first }) => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const enter = first ? 1 : interpolate(frame, [0, 14], [0, 1], { extrapolateRight: "clamp", easing: Easing.out(Easing.cubic) });
+  const pan = interpolate(frame, [12, s.dur - 6], s.pan, {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: Easing.inOut(Easing.cubic),
+  });
+  const headerH = s.header ? 165 * PX : 0;
+  const top = STATUS;
+  const tapT = s.tap ? frame - s.tap.at : -1;
+  const hl = s.highlight ? spring({ frame: frame - s.highlight.at, fps, config: { damping: 14 } }) : 0;
+  return (
+    <AbsoluteFill style={{ transform: `translateY(${(1 - enter) * 100}%)`, background: "#F8F6F2", overflow: "hidden" }}>
+      <Img src={f(s.img)} style={{ position: "absolute", top: top + headerH, left: 0, width: SCREEN_W, height: s.h * PX, transform: `translateY(${pan}px)` }} />
+      {s.header && <Img src={f("web/header.png")} style={{ position: "absolute", top, left: 0, width: SCREEN_W, height: headerH }} />}
+      {s.highlight && (
+        <div
+          style={{
+            position: "absolute",
+            left: s.highlight.x - 10,
+            top: top + s.highlight.y - 10,
+            width: s.highlight.w + 20,
+            height: s.highlight.h + 20,
+            border: `6px solid ${M}`,
+            borderRadius: 18,
+            opacity: hl,
+            transform: `scale(${interpolate(hl, [0, 1], [1.25, 1])})`,
+            boxShadow: `0 0 30px ${M}`,
+          }}
+        />
+      )}
+      {s.tap && tapT >= 0 && tapT < 24 && (
+        <div
+          style={{
+            position: "absolute",
+            left: s.tap.x - 60,
+            top: top + s.tap.y - 60,
+            width: 120,
+            height: 120,
+            borderRadius: 999,
+            border: `5px solid ${C}`,
+            background: "rgba(0,229,255,0.25)",
+            transform: `scale(${interpolate(tapT, [0, 24], [0.3, 1.6])})`,
+            opacity: interpolate(tapT, [0, 24], [1, 0]),
+          }}
+        />
+      )}
+    </AbsoluteFill>
+  );
+};
+
+const Callout: React.FC<{ text: string; side: "l" | "r"; y: number; color: string; dur: number }> = ({ text, side, y, color, dur }) => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const s = spring({ frame, fps, config: { damping: 13, stiffness: 150 } });
+  const out = interpolate(frame, [dur - 8, dur], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  const dir = side === "l" ? -1 : 1;
+  return (
+    <div
+      style={{
+        position: "absolute",
+        top: y,
+        [side === "l" ? "left" : "right"]: 40,
+        display: "flex",
+        alignItems: "stretch",
+        fontFamily,
+        opacity: s * (1 - out),
+        transform: `translateX(${(1 - s) * dir * 120}px) scale(${interpolate(s, [0, 1], [0.8, 1])})`,
+        boxShadow: "0 18px 50px rgba(0,0,0,0.45)",
+        flexDirection: side === "l" ? "row" : "row-reverse",
+      }}
+    >
+      <div style={{ width: 16, background: color }} />
+      <div style={{ background: "white", color: INK, fontWeight: 800, fontSize: 40, letterSpacing: -0.5, padding: "16px 26px 18px" }}>{text}</div>
+    </div>
+  );
+};
+
+const WebTour: React.FC = () => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const phoneIn = spring({ frame, fps, config: { damping: 16, stiffness: 80 } });
+  const titleIn = spring({ frame: frame - 6, fps, config: { damping: 14 } });
+  const url = "www.convart.in";
+  const typed = Math.max(0, Math.min(url.length, Math.floor((frame - 12) / 1.6)));
+  const caret = Math.floor(frame / 8) % 2 === 0;
+  const floatY = Math.sin(frame / 22) * 8;
+  const stepIdx = TOUR.findIndex((t) => frame >= t.from && frame < t.from + t.dur);
+  return (
+    <AbsoluteFill style={{ background: INK, fontFamily, overflow: "hidden" }}>
+      {/* soft CMYK light */}
+      {[C, M, Y].map((c, i) => (
+        <div
+          key={c}
+          style={{
+            position: "absolute",
+            width: 900,
+            height: 900,
+            borderRadius: 999,
+            background: c,
+            opacity: 0.16,
+            filter: "blur(160px)",
+            left: [-300, 500, 100][i] + Math.sin(frame / 50 + i * 2) * 80,
+            top: [200, 700, 1300][i] + Math.cos(frame / 60 + i) * 80,
+          }}
+        />
+      ))}
+
+      {/* title */}
+      <div style={{ position: "absolute", top: 120, left: 0, right: 0, textAlign: "center", opacity: titleIn, transform: `translateY(${(1 - titleIn) * -40}px)` }}>
+        <div style={{ color: Y, fontWeight: 700, fontSize: 34, letterSpacing: 10 }}>WEBSITE TOUR</div>
+        <div
+          style={{
+            margin: "22px auto 0",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 18,
+            background: "rgba(255,255,255,0.08)",
+            border: "2px solid rgba(255,255,255,0.18)",
+            borderRadius: 999,
+            padding: "14px 40px 16px 26px",
+            color: "white",
+            fontSize: 54,
+            fontWeight: 700,
+          }}
+        >
+          <div style={{ width: 22, height: 22, borderRadius: 999, background: C, boxShadow: `0 0 16px ${C}` }} />
+          <span>
+            {url.slice(0, typed)}
+            <span style={{ opacity: caret && typed < url.length ? 1 : 0, color: C }}>|</span>
+          </span>
+        </div>
+      </div>
+
+      {/* phone */}
+      <div
+        style={{
+          position: "absolute",
+          left: (1080 - 640) / 2,
+          top: 430,
+          width: 640,
+          height: 1340,
+          borderRadius: 74,
+          background: "#16161A",
+          boxShadow: `0 0 0 3px #2A2A30, 0 50px 120px rgba(0,0,0,0.7), 0 0 80px rgba(255,0,204,0.18)`,
+          transform: `translateY(${(1 - phoneIn) * 1500 + floatY}px) rotate(${(1 - phoneIn) * 8}deg)`,
+        }}
+      >
+        <div style={{ position: "absolute", left: 20, top: 20, width: SCREEN_W, height: SCREEN_H, borderRadius: 54, overflow: "hidden", background: "#F8F6F2" }}>
+          {TOUR.map((t, i) => (
+            <Sequence key={t.img} from={t.from} durationInFrames={i === TOUR.length - 1 ? TOUR_LEN - t.from : t.dur + 14} layout="none">
+              <PhoneScreen s={t} first={i === 0} />
+            </Sequence>
+          ))}
+        </div>
+        <div
+          style={{
+            position: "absolute",
+            left: 20,
+            top: 20,
+            width: SCREEN_W,
+            height: STATUS,
+            borderRadius: "54px 54px 0 0",
+            background: "#F8F6F2",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "8px 52px 0",
+            boxSizing: "border-box",
+            fontSize: 24,
+            fontWeight: 700,
+            color: INK,
+          }}
+        >
+          <span>9:41</span>
+          <span style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <span style={{ display: "flex", gap: 3, alignItems: "flex-end" }}>
+              {[8, 12, 16, 20].map((h) => (
+                <span key={h} style={{ width: 5, height: h, background: INK, borderRadius: 2 }} />
+              ))}
+            </span>
+            <span style={{ width: 38, height: 18, border: `2.5px solid ${INK}`, borderRadius: 6, padding: 2, boxSizing: "border-box" }}>
+              <span style={{ display: "block", width: "80%", height: "100%", background: INK, borderRadius: 2 }} />
+            </span>
+          </span>
+        </div>
+        <div style={{ position: "absolute", top: 34, left: 260, width: 120, height: 34, borderRadius: 999, background: "#0A0A0A" }} />
+      </div>
+
+      {/* callouts */}
+      {TOUR.map((t) =>
+        t.callouts.map((c) => (
+          <Sequence key={t.img + c.text} from={t.from + c.at} durationInFrames={t.dur - c.at} layout="none">
+            <Callout text={c.text} side={c.side} y={c.y + 430} color={c.color} dur={t.dur - c.at} />
+          </Sequence>
+        ))
+      )}
+
+      {/* step dots */}
+      <div style={{ position: "absolute", bottom: 60, left: 0, right: 0, display: "flex", justifyContent: "center", gap: 14 }}>
+        {TOUR.map((t, i) => (
+          <div
+            key={t.img}
+            style={{
+              width: i === stepIdx ? 54 : 16,
+              height: 16,
+              borderRadius: 999,
+              background: i === stepIdx ? [C, M, Y][i % 3] : "rgba(255,255,255,0.3)",
+            }}
+          />
+        ))}
+      </div>
+    </AbsoluteFill>
+  );
+};
+
 // ---------------------------------------------------------------------------
 // Main composition
 // ---------------------------------------------------------------------------
@@ -462,7 +744,12 @@ const VO: { file: string; at: number }[] = [
   { file: "vo2/l3.wav", at: 280 },
   { file: "vo2/l4.wav", at: 433 },
   { file: "vo2/l5.wav", at: 615 },
-  { file: "vo2/l6.wav", at: 747 },
+  { file: "vo2/t1.wav", at: 752 },
+  { file: "vo2/t2.wav", at: 858 },
+  { file: "vo2/t3.wav", at: 980 },
+  { file: "vo2/t4.wav", at: 1094 },
+  { file: "vo2/t5.wav", at: 1190 },
+  { file: "vo2/l6.wav", at: 1344 },
 ];
 
 const HEADLINES = [
@@ -482,6 +769,10 @@ export const ConvartTrailer: React.FC = () => {
         </Sequence>
       ))}
 
+      <Sequence from={TOUR_FROM} durationInFrames={END_FROM - TOUR_FROM}>
+        <WebTour />
+      </Sequence>
+
       <Sequence from={END_FROM} durationInFrames={TOTAL - END_FROM}>
         <EndCard />
       </Sequence>
@@ -496,26 +787,26 @@ export const ConvartTrailer: React.FC = () => {
         <Checklist dur={130} />
       </Sequence>
 
-      <Sequence from={0} durationInFrames={END_FROM}>
+      <Sequence from={0} durationInFrames={TOUR_FROM}>
         <Badge />
         <Progress />
       </Sequence>
 
       {/* block wipes centred on each cut */}
-      {[105, 273, 426, 608, 744].map((cut) => (
+      {[105, 273, 426, 608, TOUR_FROM, END_FROM].map((cut) => (
         <Sequence key={cut} from={cut - 8} durationInFrames={17}>
           <BlockWipe />
         </Sequence>
       ))}
 
       {/* Audio */}
-      <Audio src={f("music.wav")} volume={0.42} />
+      <Audio src={f("music50.wav")} volume={0.4} />
       {VO.map((v) => (
         <Sequence key={v.file} from={v.at}>
           <Audio src={f(v.file)} volume={1} />
         </Sequence>
       ))}
-      {[105, 273, 426, 608].map((cut) => (
+      {[105, 273, 426, 608, TOUR_FROM].map((cut) => (
         <Sequence key={`w${cut}`} from={cut - 9}>
           <Audio src={f("sfx/whoosh-short.mp3")} volume={0.35} />
         </Sequence>
@@ -528,6 +819,17 @@ export const ConvartTrailer: React.FC = () => {
       <Sequence from={END_FROM - 8}>
         <Audio src={f("sfx/whoosh.mp3")} volume={0.4} />
       </Sequence>
+      {/* tour: swipes between screens, taps */}
+      {[850, 975, 1090, 1185].map((t) => (
+        <Sequence key={`s${t}`} from={t - 2}>
+          <Audio src={f("sfx/whoosh-short.mp3")} volume={0.22} />
+        </Sequence>
+      ))}
+      {[TOUR_FROM + 70, TOUR_FROM + 346 + 40].map((t) => (
+        <Sequence key={`c${t}`} from={t}>
+          <Audio src={f("sfx/click-soft.mp3")} volume={0.5} />
+        </Sequence>
+      ))}
       <Sequence from={END_FROM + 60}>
         <Audio src={f("sfx/sparkle.mp3")} volume={0.35} />
       </Sequence>

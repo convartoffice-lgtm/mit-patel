@@ -4,7 +4,8 @@ import wave
 import numpy as np
 
 SR = 44100
-DUR = 30.0
+DUR = float(sys.argv[2]) if len(sys.argv) > 2 else 30.0
+END = float(sys.argv[3]) if len(sys.argv) > 3 else 24.8  # end-card hit
 BPM = 120
 BEAT = 60 / BPM
 N = int(SR * DUR)
@@ -41,7 +42,7 @@ chords = [[57, 60, 64], [53, 57, 60], [48, 55, 64], [55, 59, 62]]
 bass_roots = [45, 41, 48, 43]
 
 # Pad (saw-ish with detune, lowpassed by averaging), whole track
-for bar in range(15):
+for bar in range(int(DUR / (4 * BEAT)) + 1):
     st = bar * 4 * BEAT
     ch = chords[bar % 4]
     n = int(4 * BEAT * SR)
@@ -60,7 +61,7 @@ arp_start = 3.5
 step = BEAT / 2
 k = 0
 s = arp_start
-while s < 24.6:
+while s < END - 0.2:
     bar = int(s / (4 * BEAT)) % 4
     ch = chords[bar]
     m = ch[k % 3] + 24 if (k // 3) % 2 == 0 else ch[(2 - k) % 3] + 24
@@ -97,7 +98,7 @@ def clap():
 
 
 b = 3.5
-while b < 24.5:
+while b < END - 0.3:
     add(L, b, kick())
     add(R, b, kick())
     add(L, b + BEAT / 2, hat(open_=True) * 0.8)
@@ -110,7 +111,7 @@ while b < 24.5:
 
 # 16th hats in the middle section
 s = 9.1
-while s < 24.5:
+while s < END - 0.3:
     h = hat() * 0.7
     add(L, s, h)
     add(R, s + 0.004, h)
@@ -118,7 +119,7 @@ while s < 24.5:
 
 # Sub bass following roots, 3.5 -> 24.6, 8th notes
 s = 3.5
-while s < 24.5:
+while s < END - 0.3:
     bar = int(s / (4 * BEAT)) % 4
     f = midi(bass_roots[bar])
     n = int(BEAT / 2 * SR * 0.9)
@@ -133,23 +134,23 @@ n = int(2.0 * SR)
 noise = rng.standard_normal(n)
 sw = np.linspace(0, 1, n) ** 2.5
 riser = np.convolve(noise, np.ones(8) / 8, mode="same") * sw * 0.12
-add(L, 22.8, riser)
-add(R, 22.8, riser[::-1] * 0 + riser)
+add(L, END - 2.0, riser)
+add(R, END - 2.0, riser)
 
 # Impact + final sustained chord at 24.8
 imp_n = int(2.5 * SR)
 tt = np.arange(imp_n) / SR
 impact = np.sin(2 * np.pi * (40 + 60 * np.exp(-tt * 8)) * tt) * np.exp(-tt * 2.2) * 0.6
-add(L, 24.8, impact)
-add(R, 24.8, impact)
-n = int(5.2 * SR)
+add(L, END, impact)
+add(R, END, impact)
+n = int((DUR - END) * SR)
 tt = np.arange(n) / SR
 fin = np.zeros(n)
 for m in [57, 60, 64, 69, 72]:
     fin += np.sin(2 * np.pi * midi(m) * tt) * np.exp(-tt * 0.5)
 fin *= env(n, 0.02, 1.5) * 0.035
-add(L, 24.8, fin)
-add(R, 24.8, fin)
+add(L, END, fin)
+add(R, END, fin)
 
 # Gentle fades + normalize
 fade_in = int(0.4 * SR)
