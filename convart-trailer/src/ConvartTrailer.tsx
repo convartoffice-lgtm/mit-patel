@@ -457,18 +457,18 @@ const EndCard: React.FC = () => {
 // Main composition
 // ---------------------------------------------------------------------------
 const VO: { file: string; at: number }[] = [
-  { file: "vo/l1.wav", at: 10 },
-  { file: "vo/l2.wav", at: 113 },
-  { file: "vo/l3.wav", at: 280 },
-  { file: "vo/l4.wav", at: 433 },
-  { file: "vo/l5.wav", at: 615 },
-  { file: "vo/l6.wav", at: 750 },
+  { file: "vo2/l1.wav", at: 10 },
+  { file: "vo2/l2.wav", at: 113 },
+  { file: "vo2/l3.wav", at: 280 },
+  { file: "vo2/l4.wav", at: 433 },
+  { file: "vo2/l5.wav", at: 615 },
+  { file: "vo2/l6.wav", at: 747 },
 ];
 
 const HEADLINES = [
   { from: 4, dur: 101, top: "YOUR WALL.", bottom: "A BLANK CANVAS", color: Y },
   { from: 113, dur: 158, top: "BUILD IT", bottom: "BLOCK BY BLOCK", color: M },
-  { from: 281, dur: 143, top: "EVERY TILE", bottom: "SNAPS IN PLACE", color: C },
+  { from: 281, dur: 143, top: "EVERY BLOCK", bottom: "SNAPS IN PLACE", color: C },
   { from: 434, dur: 172, top: "SWAP THE ART.", bottom: "KEEP THE WALL.", color: Y },
 ];
 

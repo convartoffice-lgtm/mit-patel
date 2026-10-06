@@ -9,7 +9,7 @@
 - `src/convart-fonts.ts`: Poppins font inlined as base64
 - `scripts/make_music.py`: synthesizes the 120 BPM music bed
 
-Narration uses Piper TTS (`en_US-ryan-high`). Sound effects come from OpenMontage's bundled Pixabay SFX.
+Narration uses Piper TTS (`en_US-lessac-high`, with EQ, compression and loudness normalisation). Sound effects come from OpenMontage's bundled Pixabay SFX.
 To re-render, copy `src/*` into `OpenMontage/remotion-composer/src/` and put the cut footage, voice-over,
 music, SFX and logo under `remotion-composer/public/convart/`, then run:
 
