@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "india-stack": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": [
+        "mcp-india-stack@0.6.9"
+      ],
+      "env": {}
+    }
+  }
+}
